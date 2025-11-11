@@ -51,11 +51,61 @@
         .card-actions { margin-top:10px; display:flex; gap:8px; }
         .card-actions .btn { padding:8px 12px; border-radius:8px; font-weight:700; }
         .footer { text-align:center; color:#fff; padding:20px 0 40px; }
+        /* Navbar */
+        .nav { position: sticky; top:0; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); border-bottom: 1px solid #ffe0eb; }
+        .nav-inner { max-width:1100px; margin:0 auto; padding:10px 24px; display:flex; align-items:center; justify-content:space-between; }
+        .nav-brand { display:flex; align-items:center; gap:10px; font-weight:800; color:#ff4d8a; }
+        .nav-right { display:flex; align-items:center; gap:12px; }
+        .link { color:#ff4d8a; text-decoration:none; font-weight:700; }
+        .icon-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:999px; background:#fff; border:2px solid #ff4d8a; color:#ff4d8a; cursor:pointer; }
+        .badge { position:absolute; top:-6px; right:-6px; background:#ff4d8a; color:#fff; border-radius:999px; padding:2px 6px; font-size:11px; font-weight:800; }
+        .dropdown { position:relative; }
+        .dropdown-menu { position:absolute; right:0; top:46px; background:#fff; border:1px solid #ffe0eb; border-radius:10px; box-shadow:0 10px 24px rgba(255,105,180,.25); min-width:180px; display:none; }
+        .dropdown-menu a { display:block; padding:10px 12px; color:#333; text-decoration:none; }
+        .dropdown-menu a:hover { background:#ffe6ee; color:#ff4d8a; }
+        .dropdown.open .dropdown-menu { display:block; }
+        .dropdown-menu form { margin:0; }
+        .dropdown-menu button { width:100%; padding:10px 12px; border:none; background:#fff; text-align:left; cursor:pointer; }
+        .dropdown-menu button:hover { background:#ffe6ee; color:#ff4d8a; }
         @media (max-width:1000px){ .grid { grid-template-columns: repeat(2, 1fr);} .hero { grid-template-columns:1fr; } }
         @media (max-width:700px){ .grid { grid-template-columns: 1fr;} }
     </style>
 </head>
 <body>
+    <!-- Navbar -->
+    <header class="nav">
+        <div class="nav-inner">
+            <div class="nav-brand">
+                <span style="font-size:20px;">🧁</span>
+                <span>SweetCake</span>
+            </div>
+            <div class="nav-right">
+                @auth
+                    @php $cartCount = collect(session('cart', []))->sum('jumlah'); @endphp
+                    <a href="{{ route('cart.index') }}" class="icon-btn" title="Keranjang">
+                        🛒
+                        @if($cartCount > 0)
+                        <span class="badge">{{ $cartCount }}</span>
+                        @endif
+                    </a>
+                    <div class="dropdown">
+                        <button class="icon-btn" title="Akun">👤</button>
+                        <div class="dropdown-menu">
+                            <a href="{{ route('orders.index') }}">Pesanan Saya</a>
+                            <a href="{{ route('profile.edit') }}">Edit Profil</a>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit">Logout</button>
+                            </form>
+                        </div>
+                    </div>
+                @else
+                    <a class="link" href="{{ route('login') }}">Masuk</a>
+                    <a class="link" href="{{ route('register') }}">Daftar</a>
+                @endauth
+            </div>
+        </div>
+    </header>
     <section class="hero">
         <div class="hero-card">
             <div class="brand">
@@ -64,10 +114,12 @@
             </div>
             <h1>Kue Manis untuk Hari Bahagiamu</h1>
             <p class="lead">Jelajahi katalog kue terbaik kami. Dari cupcake lembut hingga cake premium — semua dibuat dengan cinta 💖</p>
+            @guest
             <div class="cta">
                 <a href="{{ route('login') }}" class="btn btn-primary">Masuk</a>
                 <a href="{{ route('register') }}" class="btn btn-outline">Daftar</a>
             </div>
+            @endguest
         </div>
         <div class="hero-card" style="text-align:center; background: linear-gradient(135deg, #fff, #fff7fb);">
             <div style="font-size: 80px;">🍰</div>
@@ -78,15 +130,6 @@
     <section class="catalog">
         <div class="section-title">Katalog Kue</div>
         <div class="grid">
-            @php
-                $produk = collect([
-                    ['nama_produk' => 'Cupcake Strawberry','harga' => 25000,'deskripsi' => 'Cupcake lembut dengan topping strawberry segar dan krim manis.','foto' => 'img/Cupcake Strawberry.jpeg'],
-                    ['nama_produk' => 'Black Forest','harga' => 120000,'deskripsi' => 'Cake cokelat klasik dengan lapisan krim dan ceri.','foto' => 'img/Black Forest.jpeg'],
-                    ['nama_produk' => 'Cheesecake','harga' => 95000,'deskripsi' => 'Cheesecake creamy dengan base biskuit renyah.','foto' => 'img/Cheesecake.jpeg'],
-                    ['nama_produk' => 'Red Velvet','harga' => 110000,'deskripsi' => 'Red Velvet cake dengan cream cheese frosting.','foto' => 'img/Red Velvet.jpeg'],
-                    ['nama_produk' => 'Matcha Mousse','harga' => 105000,'deskripsi' => 'Mousse lembut rasa matcha premium.','foto' => 'img/Matcha Mousse.jpeg'],
-                ])->map(function($d){ return (object) $d; });
-            @endphp
             @forelse ($produk as $p)
             <div class="card">
                 <div class="thumb">
@@ -101,8 +144,15 @@
                     <div class="price">Rp {{ number_format($p->harga, 0, ',', '.') }}</div>
                     <div class="desc">{{ $p->deskripsi ? (strlen($p->deskripsi) > 80 ? substr($p->deskripsi, 0, 80).'…' : $p->deskripsi) : 'Kue lezat dari SweetCake.' }}</div>
                     <div class="card-actions">
-                        <a href="#" class="btn btn-primary">Tambah ke Keranjang</a>
-                        <a href="#" class="btn btn-outline">Detail</a>
+                        @auth
+                        <form method="POST" action="{{ route('cart.add', $p->produk_id) }}" style="display:inline;">
+                            @csrf
+                            <button type="submit" class="btn btn-primary">Tambah ke Keranjang</button>
+                        </form>
+                        @else
+                        <a href="{{ route('login') }}" class="btn btn-primary">Masuk untuk beli</a>
+                        @endauth
+                        <a href="{{ route('produk.show', $p->produk_id) }}" class="btn btn-outline">Detail</a>
                     </div>
                 </div>
             </div>
@@ -115,5 +165,24 @@
     </section>
 
     <div class="footer">© {{ date('Y') }} SweetCake — Rasa Bahagia Setiap Hari</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdowns = document.querySelectorAll('.dropdown');
+            dropdowns.forEach(dd => {
+                const btn = dd.querySelector('button.icon-btn');
+                const menu = dd.querySelector('.dropdown-menu');
+                if (!btn || !menu) return;
+                btn.setAttribute('type', 'button');
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdowns.forEach(d => { if (d !== dd) d.classList.remove('open'); });
+                    dd.classList.toggle('open');
+                });
+                menu.addEventListener('click', function(e){ e.stopPropagation(); });
+            });
+            document.addEventListener('click', function(){ dropdowns.forEach(dd => dd.classList.remove('open')); });
+            document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ dropdowns.forEach(dd => dd.classList.remove('open')); } });
+        });
+    </script>
 </body>
 </html>

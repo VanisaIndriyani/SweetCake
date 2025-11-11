@@ -17,7 +17,7 @@ class AuthController extends Controller
             // Redirect sesuai role jika sudah login
             return Auth::user()->role === 'admin'
                 ? redirect()->route('admin.dashboard')
-                : redirect()->route('dashboard');
+                : redirect()->route('home');
         }
         return view('auth.login');
     }
@@ -111,8 +111,8 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         // Redirect ke halaman yang diinginkan (intended) bila ada,
-        // fallback sesuai role: admin -> /admin, user -> /dashboard
-        $fallback = $user->role === 'admin' ? route('admin.dashboard') : route('dashboard');
+        // fallback sesuai role: admin -> /admin, user -> / (Home)
+        $fallback = $user->role === 'admin' ? route('admin.dashboard') : route('home');
         return redirect()->intended($fallback);
     }
 
