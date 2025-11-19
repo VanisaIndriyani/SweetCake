@@ -58,4 +58,12 @@ Route::middleware('auth')->group(function () {
 use App\Http\Controllers\AdminController;
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/pesanan', [AdminController::class, 'orders'])->name('admin.orders.index');
+    // Admin pages: products management, notifications, settings
+    Route::get('/admin/produk', [AdminController::class, 'products'])->name('admin.products.index');
+    Route::get('/admin/notifikasi', [AdminController::class, 'notifications'])->name('admin.notifications.index');
+    Route::get('/admin/laporan', [AdminController::class, 'reports'])->name('admin.reports.index');
+    // Admin actions: update order status & verify payments
+    Route::post('/admin/pesanan/{id}/status', [AdminController::class, 'updateStatus'])->name('admin.orders.updateStatus');
+    Route::post('/admin/pembayaran/{id}/verify', [AdminController::class, 'verifyPayment'])->name('admin.payments.verify');
 });

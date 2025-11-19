@@ -123,6 +123,35 @@
                 </div>
             </div>
 
+            <!-- Pembayaran Online -->
+            <div class="card">
+                <div class="card-head">
+                    <div class="title">Pembayaran Online</div>
+                    <div style="color:#777;">Nominal: <strong>Rp {{ number_format($total,0,',','.') }}</strong></div>
+                </div>
+                <div class="card-body">
+                    <div class="hint">Pilih metode online dan unggah bukti pembayaran (transfer/kartu). Admin akan memverifikasi.</div>
+
+                    @if(session('error'))
+                        <div style="background:#ffe6e6; color:#842029; padding:10px; border-radius:8px; margin-top:12px;">{{ session('error') }}</div>
+                    @endif
+
+                    <form method="POST" action="{{ route('payment.store', $pesanan->pesanan_id) }}" enctype="multipart/form-data" style="margin-top:14px; display:grid; gap:10px;">
+                        @csrf
+                        <label for="metode_pembayaran" style="font-weight:700; color:#555;">Metode Pembayaran</label>
+                        <select id="metode_pembayaran" name="metode_pembayaran" style="padding:10px; border:1px solid #ddd; border-radius:10px;">
+                            <option value="transfer_bank">Transfer Bank</option>
+                            <option value="kartu_kredit">Kartu Kredit</option>
+                        </select>
+                        <div class="upload">
+                            <label for="bukti" style="font-weight:700; color:#555;">Unggah Bukti Pembayaran</label>
+                            <input type="file" id="bukti" name="bukti" accept=".jpg,.jpeg,.png,.webp,.pdf">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Kirim Bukti & Simpan Metode</button>
+                    </form>
+                </div>
+            </div>
+
             <!-- Bayar di Toko (COD) -->
             <div class="card">
                 <div class="card-head">
@@ -131,11 +160,6 @@
                 </div>
                 <div class="card-body">
                     <div class="hint">Silakan lakukan pembayaran langsung di toko saat pengambilan pesanan. Tidak perlu upload bukti sekarang.</div>
-
-                    @if(session('error'))
-                        <div style="background:#ffe6e6; color:#842029; padding:10px; border-radius:8px; margin-top:12px;">{{ session('error') }}</div>
-                    @endif
-
                     <form method="POST" action="{{ route('payment.store', $pesanan->pesanan_id) }}" style="margin-top:14px;">
                         @csrf
                         <input type="hidden" name="metode_pembayaran" value="cod">

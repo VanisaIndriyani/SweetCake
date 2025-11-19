@@ -34,7 +34,7 @@ class PaymentController extends Controller
             ->firstOrFail();
 
         $validated = $request->validate([
-            'metode_pembayaran' => 'required|in:cod',
+            'metode_pembayaran' => 'required|in:transfer_bank,kartu_kredit,cod',
             'bukti' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:4096',
         ]);
 
@@ -44,13 +44,19 @@ class PaymentController extends Controller
             $pembayaran->pesanan_id = $pesanan->pesanan_id;
         }
 
-        // Set metode menjadi COD (bayar di toko)
-        $pembayaran->metode_pembayaran = 'cod';
+        // Set metode sesuai pilihan user
+        $pembayaran->metode_pembayaran = $validated['metode_pembayaran'];
         $pembayaran->jumlah_pembayaran = $pembayaran->jumlah_pembayaran ?? $pesanan->details->reduce(function($c,$d){
             $harga = $d->produk ? $d->produk->harga : 0; return $c + ($harga * $d->jumlah);
         }, 0);
         $pembayaran->tanggal_pembayaran = now();
         $pembayaran->status = 'pending';
+
+        // Bukti wajib untuk metode online, opsional untuk COD
+        if (in_array($validated['metode_pembayaran'], ['transfer_bank', 'kartu_kredit']) && !$request->hasFile('bukti')) {
+            return back()->with('error', 'Untuk pembayaran online, silakan unggah bukti pembayaran.');
+        }
+
         if ($request->hasFile('bukti')) {
             $path = $request->file('bukti')->store('payments', 'public');
             $pembayaran->bukti_pembayaran = $path;
@@ -58,6 +64,6 @@ class PaymentController extends Controller
         $pembayaran->save();
 
         return redirect()->route('orders.show', $pesanan->pesanan_id)
-            ->with('success', 'Bukti pembayaran diunggah. Menunggu verifikasi admin.');
+            ->with('success', 'Metode pembayaran disimpan. Jika online, bukti dikirim dan menunggu verifikasi admin.');
     }
 }
