@@ -48,6 +48,8 @@ Route::middleware('auth')->group(function () {
     // Detail pesanan untuk user yang bersangkutan
     Route::get('/pesanan', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/pesanan/{id}', [OrderController::class, 'show'])->name('orders.show');
+    // Notifikasi user
+    Route::get('/notifikasi', [OrderController::class, 'notifications'])->name('orders.notifications');
 
     // Edit profil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -63,7 +65,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/produk', [AdminController::class, 'products'])->name('admin.products.index');
     Route::get('/admin/notifikasi', [AdminController::class, 'notifications'])->name('admin.notifications.index');
     Route::get('/admin/laporan', [AdminController::class, 'reports'])->name('admin.reports.index');
+    Route::get('/admin/laporan/export', [AdminController::class, 'exportPdf'])->name('admin.reports.export');
     // Admin actions: update order status & verify payments
     Route::post('/admin/pesanan/{id}/status', [AdminController::class, 'updateStatus'])->name('admin.orders.updateStatus');
     Route::post('/admin/pembayaran/{id}/verify', [AdminController::class, 'verifyPayment'])->name('admin.payments.verify');
+    // Admin actions: create notification
+    Route::post('/admin/notifikasi', [AdminController::class, 'storeNotification'])->name('admin.notifications.store');
 });

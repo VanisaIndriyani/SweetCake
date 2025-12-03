@@ -242,6 +242,7 @@
 
                         <div class="dropdown-menu">
                             <a href="{{ route('orders.index') }}">Pesanan Saya</a>
+                            <a href="{{ route('orders.notifications') }}">🔔 Notifikasi</a>
                             <a href="{{ route('profile.edit') }}">Edit Profil</a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf

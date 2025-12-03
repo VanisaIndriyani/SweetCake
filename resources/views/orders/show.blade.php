@@ -54,6 +54,7 @@
                 <button class="icon-btn" id="profileToggle" aria-expanded="false" aria-controls="profileMenu">👤</button>
                 <div class="dropdown-menu" id="profileMenu" role="menu" aria-labelledby="profileToggle">
                     <a class="dropdown-item" href="{{ route('orders.index') }}">Pesanan Saya</a>
+                    <a class="dropdown-item" href="{{ route('orders.notifications') }}">🔔 Notifikasi</a>
                     <a class="dropdown-item" href="{{ route('profile.edit') }}">Edit Profil</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf

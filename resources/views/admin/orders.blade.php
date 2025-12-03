@@ -163,7 +163,7 @@ table tbody tr:hover {
     <tbody>
         @forelse($pesanan as $o)
         <tr>
-            <td>{{ $o->pesanan_id }}</td>
+            <td>{{ $loop->iteration }}</td>
             <td>{{ $o->user ? $o->user->nama : '-' }}</td>
             <td>{{ $o->tanggal_pesanan }}</td>
 

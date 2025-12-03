@@ -123,7 +123,7 @@
     <table>
         <thead>
             <tr>
-                <th>ID</th>
+                <th>#</th>
                 <th>Foto</th>
                 <th>Nama Kue</th>
                 <th>Harga</th>
@@ -134,7 +134,7 @@
         <tbody>
             @forelse ($produk as $p)
             <tr>
-                <td>{{ $p->produk_id }}</td>
+                <td>{{ $loop->iteration }}</td>
                 <td>
                     @if($p->foto)
                         <img src="{{ asset('storage/'.$p->foto) }}" 

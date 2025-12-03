@@ -31,7 +31,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>#</th>
                     <th>Foto</th>
                     <th>Nama</th>
                     <th>Harga</th>
@@ -44,8 +44,8 @@
             <tbody>
                 @forelse($produk as $p)
                 <tr>
-                    {{-- ID --}}
-                    <td>{{ $p->produk_id }}</td>
+                    {{-- Nomor Urut --}}
+                    <td>{{ $loop->iteration }}</td>
 
                     {{-- Foto --}}
                     <td>

@@ -30,4 +30,9 @@ class Pesanan extends Model
     {
         return $this->hasOne(Pembayaran::class, 'pesanan_id', 'pesanan_id');
     }
+
+    public function notifikasi()
+    {
+        return $this->hasMany(Notifikasi::class, 'pesanan_id', 'pesanan_id');
+    }
 }

@@ -74,6 +74,7 @@
                         <button class="icon-btn" title="Akun" type="button">👤</button>
                         <div class="dropdown-menu">
                             <a href="{{ route('orders.index') }}">Pesanan Saya</a>
+                            <a href="{{ route('orders.notifications') }}">🔔 Notifikasi</a>
                             <a href="{{ route('profile.edit') }}">Edit Profil</a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -133,6 +134,23 @@
                         <div class="label">Metode Bayar</div>
                         <div class="value">{{ strtoupper($metode) }}</div>
                     </div>
+                    
+                    @if($p->notifikasi && $p->notifikasi->count() > 0)
+                        <div style="margin-top:12px; padding:12px; background:#fff7fb; border-left:3px solid #ff4d8a; border-radius:6px;">
+                            <div style="font-weight:700; color:#c2185b; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                                🔔 Notifikasi Terbaru
+                            </div>
+                            @foreach($p->notifikasi->sortByDesc('tanggal_kirim')->take(2) as $notif)
+                                <div style="margin-bottom:8px; padding:8px; background:white; border-radius:6px; font-size:13px;">
+                                    <div style="color:#666; margin-bottom:4px;">
+                                        {{ \Carbon\Carbon::parse($notif->tanggal_kirim)->format('d/m/Y H:i') }}
+                                    </div>
+                                    <div style="color:#333;">{{ $notif->pesan }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                    
                     <div class="actions">
                         <a href="{{ route('orders.show', $p->pesanan_id) }}" class="btn btn-outline">Lihat Detail</a>
                         @if(!$p->pembayaran || $p->pembayaran->status !== 'success')

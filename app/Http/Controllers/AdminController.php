@@ -7,7 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\Produk;
 use App\Models\Pesanan;
 use App\Models\Pembayaran;
+use App\Models\Notifikasi;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -46,6 +48,19 @@ class AdminController extends Controller
         $pesanan = Pesanan::where('pesanan_id', $id)->firstOrFail();
         $pesanan->status = $request->input('status');
         $pesanan->save();
+
+        // Buat notifikasi otomatis untuk pelanggan
+        $statusMessages = [
+            'baru' => 'Pesanan #' . $id . ' telah diterima dan sedang diproses.',
+            'diproses' => 'Pesanan #' . $id . ' sedang dalam proses pembuatan.',
+            'selesai' => 'Pesanan #' . $id . ' telah selesai dan siap diambil!',
+        ];
+
+        Notifikasi::create([
+            'pesanan_id' => $id,
+            'pesan' => $statusMessages[$request->input('status')] ?? 'Status pesanan #' . $id . ' telah diperbarui.',
+            'tanggal_kirim' => now(),
+        ]);
 
         return redirect()->route('admin.orders.index')->with('success', 'Status pesanan #' . $id . ' diperbarui.');
     }
@@ -86,31 +101,187 @@ class AdminController extends Controller
     }
 
     /**
-     * Halaman notifikasi admin (placeholder sederhana).
+     * Halaman notifikasi admin - menampilkan semua notifikasi yang telah dikirim
      */
     public function notifications()
     {
-        // Placeholder: belum ada model Notifikasi, tampilkan kosong dahulu
-        $notifications = [];
-        return view('admin.notifications', compact('notifications'));
+        $notifications = Notifikasi::with(['pesanan.user'])
+            ->orderBy('tanggal_kirim', 'desc')
+            ->limit(100)
+            ->get();
+        
+        $pesanan = Pesanan::with('user')
+            ->orderBy('pesanan_id', 'desc')
+            ->limit(50)
+            ->get();
+        
+        return view('admin.notifications', compact('notifications', 'pesanan'));
     }
 
     /**
-     * Halaman laporan penjualan sederhana.
+     * Simpan notifikasi baru untuk pelanggan
      */
-    public function reports()
+    public function storeNotification(Request $request)
     {
-        $monthly = Pembayaran::selectRaw('YEAR(tanggal_pembayaran) as year, MONTH(tanggal_pembayaran) as month, SUM(jumlah_pembayaran) as total')
-            ->where('status', 'completed')
-            ->groupBy('year','month')
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
-            ->limit(12)
-            ->get();
+        $request->validate([
+            'pesanan_id' => 'required|exists:tb_pesanan,pesanan_id',
+            'pesan' => 'required|string|max:500',
+        ]);
+
+        Notifikasi::create([
+            'pesanan_id' => $request->input('pesanan_id'),
+            'pesan' => $request->input('pesan'),
+            'tanggal_kirim' => now(),
+        ]);
+
+        return redirect()->route('admin.notifications.index')
+            ->with('success', 'Notifikasi berhasil dikirim ke pelanggan!');
+    }
+
+    /**
+     * Halaman laporan penjualan dengan filter harian/bulanan/tahunan.
+     */
+    public function reports(Request $request)
+    {
+        $filterType = $request->input('filter_type', 'bulanan'); // harian, bulanan, tahunan
+        $filterDate = $request->input('filter_date', date('Y-m-d'));
+        $filterMonth = $request->input('filter_month', date('Y-m'));
+        $filterYear = $request->input('filter_year', date('Y'));
+
+        $query = Pembayaran::where('status', 'completed');
+
+        $data = [];
+        $totalPenjualan = 0;
+        $totalTransaksi = 0;
+
+        if ($filterType === 'harian') {
+            $date = Carbon::parse($filterDate);
+            $query->whereDate('tanggal_pembayaran', $date);
+            
+            $data = Pembayaran::where('status', 'completed')
+                ->whereDate('tanggal_pembayaran', $date)
+                ->with('pesanan.user')
+                ->orderBy('tanggal_pembayaran', 'desc')
+                ->get();
+            
+            $totalPenjualan = $data->sum('jumlah_pembayaran');
+            $totalTransaksi = $data->count();
+            $periodLabel = 'Harian - ' . $date->format('d F Y');
+
+        } elseif ($filterType === 'bulanan') {
+            [$year, $month] = explode('-', $filterMonth);
+            $query->whereYear('tanggal_pembayaran', $year)
+                  ->whereMonth('tanggal_pembayaran', $month);
+            
+            $data = Pembayaran::where('status', 'completed')
+                ->whereYear('tanggal_pembayaran', $year)
+                ->whereMonth('tanggal_pembayaran', $month)
+                ->with('pesanan.user')
+                ->orderBy('tanggal_pembayaran', 'desc')
+                ->get();
+            
+            $totalPenjualan = $data->sum('jumlah_pembayaran');
+            $totalTransaksi = $data->count();
+            $periodLabel = 'Bulanan - ' . Carbon::create($year, $month)->format('F Y');
+
+        } else { // tahunan
+            $query->whereYear('tanggal_pembayaran', $filterYear);
+            
+            $monthlyData = Pembayaran::selectRaw('YEAR(tanggal_pembayaran) as year, MONTH(tanggal_pembayaran) as month, SUM(jumlah_pembayaran) as total, COUNT(*) as count')
+                ->where('status', 'completed')
+                ->whereYear('tanggal_pembayaran', $filterYear)
+                ->groupBy('year', 'month')
+                ->orderBy('month', 'asc')
+                ->get();
+            
+            $data = $monthlyData;
+            $totalPenjualan = $monthlyData->sum('total');
+            $totalTransaksi = $monthlyData->sum('count');
+            $periodLabel = 'Tahunan - ' . $filterYear;
+        }
 
         $pendingCount = Pembayaran::where('status', 'pending')->count();
         $ordersCount = Pesanan::count();
 
-        return view('admin.reports', compact('monthly', 'pendingCount', 'ordersCount'));
+        return view('admin.reports', compact(
+            'data', 
+            'totalPenjualan', 
+            'totalTransaksi', 
+            'pendingCount', 
+            'ordersCount',
+            'filterType',
+            'filterDate',
+            'filterMonth',
+            'filterYear',
+            'periodLabel'
+        ));
+    }
+
+    /**
+     * Export laporan penjualan ke PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $filterType = $request->input('filter_type', 'bulanan');
+        $filterDate = $request->input('filter_date', date('Y-m-d'));
+        $filterMonth = $request->input('filter_month', date('Y-m'));
+        $filterYear = $request->input('filter_year', date('Y'));
+
+        $query = Pembayaran::where('status', 'completed');
+
+        $data = [];
+        $totalPenjualan = 0;
+        $totalTransaksi = 0;
+
+        if ($filterType === 'harian') {
+            $date = Carbon::parse($filterDate);
+            $data = Pembayaran::where('status', 'completed')
+                ->whereDate('tanggal_pembayaran', $date)
+                ->with('pesanan.user')
+                ->orderBy('tanggal_pembayaran', 'desc')
+                ->get();
+            
+            $totalPenjualan = $data->sum('jumlah_pembayaran');
+            $totalTransaksi = $data->count();
+            $periodLabel = 'Harian - ' . $date->format('d F Y');
+
+        } elseif ($filterType === 'bulanan') {
+            [$year, $month] = explode('-', $filterMonth);
+            $data = Pembayaran::where('status', 'completed')
+                ->whereYear('tanggal_pembayaran', $year)
+                ->whereMonth('tanggal_pembayaran', $month)
+                ->with('pesanan.user')
+                ->orderBy('tanggal_pembayaran', 'desc')
+                ->get();
+            
+            $totalPenjualan = $data->sum('jumlah_pembayaran');
+            $totalTransaksi = $data->count();
+            $periodLabel = 'Bulanan - ' . Carbon::create($year, $month)->format('F Y');
+
+        } else { // tahunan
+            $monthlyData = Pembayaran::selectRaw('YEAR(tanggal_pembayaran) as year, MONTH(tanggal_pembayaran) as month, SUM(jumlah_pembayaran) as total, COUNT(*) as count')
+                ->where('status', 'completed')
+                ->whereYear('tanggal_pembayaran', $filterYear)
+                ->groupBy('year', 'month')
+                ->orderBy('month', 'asc')
+                ->get();
+            
+            $data = $monthlyData;
+            $totalPenjualan = $monthlyData->sum('total');
+            $totalTransaksi = $monthlyData->sum('count');
+            $periodLabel = 'Tahunan - ' . $filterYear;
+        }
+
+        $pdf = Pdf::loadView('admin.reports-pdf', compact(
+            'data',
+            'totalPenjualan',
+            'totalTransaksi',
+            'periodLabel',
+            'filterType'
+        ));
+
+        $filename = 'laporan-penjualan-' . strtolower(str_replace(' ', '-', $periodLabel)) . '.pdf';
+        
+        return $pdf->download($filename);
     }
 }
