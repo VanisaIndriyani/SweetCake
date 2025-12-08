@@ -63,6 +63,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/pesanan', [AdminController::class, 'orders'])->name('admin.orders.index');
     // Admin pages: products management, notifications, settings
     Route::get('/admin/produk', [AdminController::class, 'products'])->name('admin.products.index');
+    Route::get('/admin/produk/create', [AdminController::class, 'createProduct'])->name('admin.products.create');
+    Route::post('/admin/produk', [AdminController::class, 'storeProduct'])->name('admin.products.store');
+    Route::get('/admin/produk/{id}/edit', [AdminController::class, 'editProduct'])->name('admin.products.edit');
+    Route::put('/admin/produk/{id}', [AdminController::class, 'updateProduct'])->name('admin.products.update');
+    Route::delete('/admin/produk/{id}', [AdminController::class, 'destroyProduct'])->name('admin.products.destroy');
     Route::get('/admin/notifikasi', [AdminController::class, 'notifications'])->name('admin.notifications.index');
     Route::get('/admin/laporan', [AdminController::class, 'reports'])->name('admin.reports.index');
     Route::get('/admin/laporan/export', [AdminController::class, 'exportPdf'])->name('admin.reports.export');
