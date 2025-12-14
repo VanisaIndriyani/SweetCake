@@ -512,12 +512,12 @@
                 </div>
             </div>
 
-            <!-- Pembayaran Online -->
+            <!-- Pembayaran -->
             <div class="card">
                 <div class="card-head">
                     <div class="title">
                         <i class="fas fa-credit-card"></i>
-                        Pembayaran Online
+                        Metode Pembayaran
                     </div>
                     <div class="amount-badge">
                         <i class="fas fa-money-bill-wave"></i>
@@ -525,9 +525,9 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="hint">
+                    <div class="hint" id="payment-hint">
                         <i class="fas fa-info-circle"></i>
-                        <span>Pilih metode online dan unggah bukti pembayaran (transfer/kartu). Admin akan memverifikasi.</span>
+                        <span>Pilih metode pembayaran yang ingin Anda gunakan.</span>
                     </div>
 
                     @if(session('error'))
@@ -543,48 +543,22 @@
                             <i class="fas fa-wallet"></i>
                             Metode Pembayaran
                         </label>
-                        <select id="metode_pembayaran" name="metode_pembayaran">
+                        <select id="metode_pembayaran" name="metode_pembayaran" required>
+                            <option value="">-- Pilih Metode Pembayaran --</option>
                             <option value="transfer_bank">💳 Transfer Bank</option>
                             <option value="kartu_kredit">💳 Kartu Kredit</option>
+                            <option value="cod">🏪 Pembayaran di Toko (COD)</option>
                         </select>
-                        <div class="upload">
+                        <div class="upload" id="upload-section" style="display: none;">
                             <label for="bukti">
                                 <i class="fas fa-file-upload"></i>
                                 Unggah Bukti Pembayaran
                             </label>
                             <input type="file" id="bukti" name="bukti" accept=".jpg,.jpeg,.png,.webp,.pdf">
                         </div>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="submit-btn">
                             <i class="fas fa-paper-plane"></i>
-                            Kirim Bukti & Simpan Metode
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Bayar di Toko (COD) -->
-            <div class="card">
-                <div class="card-head">
-                    <div class="title">
-                        <i class="fas fa-store"></i>
-                        Pembayaran di Toko
-                    </div>
-                    <div class="amount-badge">
-                        <i class="fas fa-money-bill-wave"></i>
-                        Rp {{ number_format($total,0,',','.') }}
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="hint">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Silakan lakukan pembayaran langsung di toko saat pengambilan pesanan. Tidak perlu upload bukti sekarang.</span>
-                    </div>
-                    <form method="POST" action="{{ route('payment.store', $pesanan->pesanan_id) }}" style="margin-top:20px;">
-                        @csrf
-                        <input type="hidden" name="metode_pembayaran" value="cod">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-check-circle"></i>
-                            Konfirmasi Bayar di Toko
+                            <span id="submit-text">Simpan Metode Pembayaran</span>
                         </button>
                     </form>
                 </div>
@@ -608,6 +582,37 @@
             });
             document.addEventListener('click', function(){ dropdowns.forEach(dd => dd.classList.remove('open')); });
             document.addEventListener('keydown', function(e){ if(e.key === 'Escape'){ dropdowns.forEach(dd => dd.classList.remove('open')); } });
+
+            // Handle payment method dropdown change
+            const metodeSelect = document.getElementById('metode_pembayaran');
+            const uploadSection = document.getElementById('upload-section');
+            const paymentHint = document.getElementById('payment-hint');
+            const submitText = document.getElementById('submit-text');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (metodeSelect) {
+                metodeSelect.addEventListener('change', function() {
+                    const selectedMethod = this.value;
+                    const hintSpan = paymentHint.querySelector('span');
+                    
+                    if (selectedMethod === 'cod') {
+                        uploadSection.style.display = 'none';
+                        hintSpan.textContent = 'Silakan lakukan pembayaran langsung di toko saat pengambilan pesanan. Tidak perlu upload bukti sekarang.';
+                        submitText.textContent = 'Konfirmasi Bayar di Toko';
+                        submitBtn.querySelector('i').className = 'fas fa-check-circle';
+                    } else if (selectedMethod === 'transfer_bank' || selectedMethod === 'kartu_kredit') {
+                        uploadSection.style.display = 'flex';
+                        hintSpan.textContent = 'Pilih metode online dan unggah bukti pembayaran (transfer/kartu). Admin akan memverifikasi.';
+                        submitText.textContent = 'Kirim Bukti & Simpan Metode';
+                        submitBtn.querySelector('i').className = 'fas fa-paper-plane';
+                    } else {
+                        uploadSection.style.display = 'none';
+                        hintSpan.textContent = 'Pilih metode pembayaran yang ingin Anda gunakan.';
+                        submitText.textContent = 'Simpan Metode Pembayaran';
+                        submitBtn.querySelector('i').className = 'fas fa-paper-plane';
+                    }
+                });
+            }
         });
     </script>
  </body>

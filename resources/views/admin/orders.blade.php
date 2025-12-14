@@ -378,14 +378,15 @@ table tbody tr:hover {
                 {{-- Verifikasi Pembayaran --}}
                 @if($o->pembayaran)
                 @php
+                    // COD bisa diverifikasi tanpa bukti, metode online perlu bukti
+                    $isCod = $o->pembayaran->metode_pembayaran === 'cod';
                     $canVerify = ($o->pembayaran->status !== 'completed')
-                        && ($o->pembayaran->bukti_pembayaran)
-                        && ($o->pembayaran->metode_pembayaran !== 'cod');
+                        && ($isCod || $o->pembayaran->bukti_pembayaran);
                 @endphp
 
                 <form method="POST"
                       action="{{ route('admin.payments.verify', $o->pembayaran->pembayaran_id) }}"
-                      onsubmit="return confirm('Verifikasi pembayaran #{{ $o->pembayaran->pembayaran_id }}?')">
+                      onsubmit="return confirm('{{ $isCod ? 'Verifikasi pembayaran COD #' . $o->pembayaran->pembayaran_id . '? (Pelanggan sudah bayar di toko)' : 'Verifikasi pembayaran #' . $o->pembayaran->pembayaran_id . '?' }}')">
                     @csrf
 
                     <button type="submit"
@@ -401,18 +402,17 @@ table tbody tr:hover {
                         @endif
                     </button>
 
-                    @if(!$canVerify)
+                    @if(!$canVerify && $o->pembayaran->status !== 'completed')
                         <span class="action-note">
-                            @if($o->pembayaran->status === 'completed')
-                                <i class="fas fa-check-circle"></i>
-                                Sudah diverifikasi
-                            @elseif($o->pembayaran->metode_pembayaran === 'cod')
-                                <i class="fas fa-info-circle"></i>
-                                COD – Tidak perlu verifikasi
-                            @elseif(!$o->pembayaran->bukti_pembayaran)
+                            @if(!$isCod && !$o->pembayaran->bukti_pembayaran)
                                 <i class="fas fa-exclamation-triangle"></i>
                                 Tidak ada bukti pembayaran
                             @endif
+                        </span>
+                    @elseif($isCod && $o->pembayaran->status === 'pending')
+                        <span class="action-note">
+                            <i class="fas fa-info-circle"></i>
+                            COD – Verifikasi setelah pelanggan bayar di toko
                         </span>
                     @endif
                 </form>

@@ -24,6 +24,7 @@ class AdminController extends Controller
         $pesananBaru = Pesanan::where('status', 'baru')->count();
         $produkAktif = Produk::where('stok', '>', 0)->count();
         $pembayaranPending = Pembayaran::where('status', 'pending')->count();
+        // Penjualan bulan ini termasuk semua metode pembayaran yang sudah completed (COD, Transfer Bank, Kartu Kredit)
         $penjualanBulanIni = Pembayaran::where('status', 'completed')
             ->whereYear('tanggal_pembayaran', now()->year)
             ->whereMonth('tanggal_pembayaran', now()->month)
@@ -68,17 +69,24 @@ class AdminController extends Controller
     }
 
     /**
-     * Verifikasi pembayaran: tandai completed jika ada bukti.
+     * Verifikasi pembayaran: tandai completed jika ada bukti atau COD.
      */
     public function verifyPayment($id)
     {
         $pembayaran = Pembayaran::where('pembayaran_id', $id)->firstOrFail();
-        // Jika ada bukti, set completed; jika tidak, tetap pending
-        if ($pembayaran->bukti_pembayaran) {
+        
+        // Untuk COD, bisa langsung verifikasi tanpa bukti
+        // Untuk metode online, perlu bukti pembayaran
+        if ($pembayaran->metode_pembayaran === 'cod') {
+            $pembayaran->status = 'completed';
+            $pembayaran->save();
+            return redirect()->route('admin.orders.index')->with('success', 'Pembayaran COD #' . $id . ' telah diverifikasi.');
+        } elseif ($pembayaran->bukti_pembayaran) {
             $pembayaran->status = 'completed';
             $pembayaran->save();
             return redirect()->route('admin.orders.index')->with('success', 'Pembayaran #' . $id . ' diverifikasi.');
         }
+        
         return redirect()->route('admin.orders.index')->with('error', 'Tidak ada bukti pembayaran untuk diverifikasi.');
     }
     /**
@@ -249,6 +257,7 @@ class AdminController extends Controller
 
     /**
      * Halaman laporan penjualan dengan filter harian/bulanan/tahunan.
+     * Menampilkan semua pembayaran yang sudah completed (termasuk COD, Transfer Bank, dan Kartu Kredit).
      */
     public function reports(Request $request)
     {
@@ -257,6 +266,7 @@ class AdminController extends Controller
         $filterMonth = $request->input('filter_month', date('Y-m'));
         $filterYear = $request->input('filter_year', date('Y'));
 
+        // Ambil semua pembayaran yang sudah completed (termasuk COD, Transfer Bank, Kartu Kredit)
         $query = Pembayaran::where('status', 'completed');
 
         $data = [];
@@ -267,6 +277,7 @@ class AdminController extends Controller
             $date = Carbon::parse($filterDate);
             $query->whereDate('tanggal_pembayaran', $date);
             
+            // Ambil semua pembayaran completed (COD, Transfer Bank, Kartu Kredit)
             $data = Pembayaran::where('status', 'completed')
                 ->whereDate('tanggal_pembayaran', $date)
                 ->with('pesanan.user')
@@ -282,6 +293,7 @@ class AdminController extends Controller
             $query->whereYear('tanggal_pembayaran', $year)
                   ->whereMonth('tanggal_pembayaran', $month);
             
+            // Ambil semua pembayaran completed (COD, Transfer Bank, Kartu Kredit)
             $data = Pembayaran::where('status', 'completed')
                 ->whereYear('tanggal_pembayaran', $year)
                 ->whereMonth('tanggal_pembayaran', $month)
@@ -296,6 +308,7 @@ class AdminController extends Controller
         } else { // tahunan
             $query->whereYear('tanggal_pembayaran', $filterYear);
             
+            // Ambil semua pembayaran completed (COD, Transfer Bank, Kartu Kredit) dikelompokkan per bulan
             $monthlyData = Pembayaran::selectRaw('YEAR(tanggal_pembayaran) as year, MONTH(tanggal_pembayaran) as month, SUM(jumlah_pembayaran) as total, COUNT(*) as count')
                 ->where('status', 'completed')
                 ->whereYear('tanggal_pembayaran', $filterYear)
@@ -328,6 +341,7 @@ class AdminController extends Controller
 
     /**
      * Export laporan penjualan ke PDF
+     * Menampilkan semua pembayaran yang sudah completed (termasuk COD, Transfer Bank, dan Kartu Kredit).
      */
     public function exportPdf(Request $request)
     {
@@ -336,6 +350,7 @@ class AdminController extends Controller
         $filterMonth = $request->input('filter_month', date('Y-m'));
         $filterYear = $request->input('filter_year', date('Y'));
 
+        // Ambil semua pembayaran yang sudah completed (termasuk COD, Transfer Bank, Kartu Kredit)
         $query = Pembayaran::where('status', 'completed');
 
         $data = [];

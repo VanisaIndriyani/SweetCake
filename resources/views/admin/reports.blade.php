@@ -168,6 +168,9 @@
                                 <i class="fas fa-user"></i> Pelanggan
                             </th>
                             <th style="padding:14px 12px; text-align:left; color:#ff4d8a; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; font-size:12px; border-bottom:2px solid rgba(255, 182, 193, 0.4);">
+                                <i class="fas fa-credit-card"></i> Metode Bayar
+                            </th>
+                            <th style="padding:14px 12px; text-align:left; color:#ff4d8a; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; font-size:12px; border-bottom:2px solid rgba(255, 182, 193, 0.4);">
                                 <i class="fas fa-money-bill-wave"></i> Jumlah
                             </th>
                         @else
@@ -186,6 +189,29 @@
                 <tbody>
                     @if($filterType == 'harian' || $filterType == 'bulanan')
                         @foreach($data as $item)
+                            @php
+                                $metode = $item->metode_pembayaran ?? '-';
+                                $metodeLabel = '';
+                                $metodeIcon = '';
+                                $metodeColor = '#ff4d8a';
+                                
+                                if ($metode === 'cod') {
+                                    $metodeLabel = 'COD (Bayar di Toko)';
+                                    $metodeIcon = 'fa-store';
+                                    $metodeColor = '#fa8c16';
+                                } elseif ($metode === 'transfer_bank') {
+                                    $metodeLabel = 'Transfer Bank';
+                                    $metodeIcon = 'fa-university';
+                                    $metodeColor = '#1890ff';
+                                } elseif ($metode === 'kartu_kredit') {
+                                    $metodeLabel = 'Kartu Kredit';
+                                    $metodeIcon = 'fa-credit-card';
+                                    $metodeColor = '#722ed1';
+                                } else {
+                                    $metodeLabel = ucfirst(str_replace('_', ' ', $metode));
+                                    $metodeIcon = 'fa-wallet';
+                                }
+                            @endphp
                             <tr style="border-bottom:1px solid rgba(255, 182, 193, 0.1); transition:all 0.2s ease;">
                                 <td style="padding:14px 12px; color:#555; font-weight:600;">{{ $loop->iteration }}</td>
                                 <td style="padding:14px 12px; color:#555;">
@@ -195,6 +221,10 @@
                                 <td style="padding:14px 12px; color:#555; font-weight:600;">
                                     <i class="fas fa-user-circle" style="color:#ff69b4; margin-right:6px;"></i>
                                     {{ $item->pesanan && $item->pesanan->user ? $item->pesanan->user->nama : '-' }}
+                                </td>
+                                <td style="padding:14px 12px; color:#555; font-weight:600;">
+                                    <i class="fas {{ $metodeIcon }}" style="color:{{ $metodeColor }}; margin-right:6px;"></i>
+                                    <span style="color:{{ $metodeColor }};">{{ $metodeLabel }}</span>
                                 </td>
                                 <td style="padding:14px 12px; color:#ff4d8a; font-weight:700; font-size:14px;">
                                     <i class="fas fa-money-bill-wave" style="margin-right:6px;"></i>
